@@ -164,6 +164,7 @@ homeassistant/components/konnected/* @heythisisnate
 homeassistant/components/lametric/* @robbiet480
 homeassistant/components/launch_library/* @ludeeus
 homeassistant/components/lcn/* @alengwenus
+homeassistant/components/lg_ess/* @gluap
 homeassistant/components/life360/* @pnbruckner
 homeassistant/components/linky/* @Quentame
 homeassistant/components/linux_battery/* @fabaff

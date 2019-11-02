@@ -1,7 +1,8 @@
 """Test zha switch."""
 from unittest.mock import call, patch
 
-from zigpy.zcl.foundation import Command
+import zigpy.zcl.clusters.general as general
+import zigpy.zcl.foundation as zcl_f
 
 from homeassistant.components.switch import DOMAIN
 from homeassistant.const import STATE_OFF, STATE_ON, STATE_UNAVAILABLE
@@ -10,8 +11,8 @@ from .common import (
     async_enable_traffic,
     async_init_zigpy_device,
     async_test_device_join,
+    find_entity_id,
     make_attribute,
-    make_entity_id,
     make_zcl_header,
 )
 
@@ -23,12 +24,14 @@ OFF = 0
 
 async def test_switch(hass, config_entry, zha_gateway):
     """Test zha switch platform."""
-    from zigpy.zcl.clusters.general import OnOff, Basic
-    from zigpy.zcl.foundation import Status
 
     # create zigpy device
     zigpy_device = await async_init_zigpy_device(
-        hass, [OnOff.cluster_id, Basic.cluster_id], [], None, zha_gateway
+        hass,
+        [general.OnOff.cluster_id, general.Basic.cluster_id],
+        [],
+        None,
+        zha_gateway,
     )
 
     # load up switch domain
@@ -36,8 +39,9 @@ async def test_switch(hass, config_entry, zha_gateway):
     await hass.async_block_till_done()
 
     cluster = zigpy_device.endpoints.get(1).on_off
-    entity_id = make_entity_id(DOMAIN, zigpy_device, cluster)
     zha_device = zha_gateway.get_device(zigpy_device.ieee)
+    entity_id = await find_entity_id(DOMAIN, zha_device, hass)
+    assert entity_id is not None
 
     # test that the switch was created and that its state is unavailable
     assert hass.states.get(entity_id).state == STATE_UNAVAILABLE
@@ -50,7 +54,7 @@ async def test_switch(hass, config_entry, zha_gateway):
 
     # turn on at switch
     attr = make_attribute(0, 1)
-    hdr = make_zcl_header(Command.Report_Attributes)
+    hdr = make_zcl_header(zcl_f.Command.Report_Attributes)
     cluster.handle_message(hdr, [[attr]])
     await hass.async_block_till_done()
     assert hass.states.get(entity_id).state == STATE_ON
@@ -63,7 +67,8 @@ async def test_switch(hass, config_entry, zha_gateway):
 
     # turn on from HA
     with patch(
-        "zigpy.zcl.Cluster.request", return_value=mock_coro([0x00, Status.SUCCESS])
+        "zigpy.zcl.Cluster.request",
+        return_value=mock_coro([0x00, zcl_f.Status.SUCCESS]),
     ):
         # turn on via UI
         await hass.services.async_call(
@@ -76,7 +81,8 @@ async def test_switch(hass, config_entry, zha_gateway):
 
     # turn off from HA
     with patch(
-        "zigpy.zcl.Cluster.request", return_value=mock_coro([0x01, Status.SUCCESS])
+        "zigpy.zcl.Cluster.request",
+        return_value=mock_coro([0x01, zcl_f.Status.SUCCESS]),
     ):
         # turn off via UI
         await hass.services.async_call(
@@ -88,4 +94,4 @@ async def test_switch(hass, config_entry, zha_gateway):
         )
 
     # test joining a new switch to the network and HA
-    await async_test_device_join(hass, zha_gateway, OnOff.cluster_id, DOMAIN)
+    await async_test_device_join(hass, zha_gateway, general.OnOff.cluster_id, entity_id)

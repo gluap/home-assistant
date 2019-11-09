@@ -35,6 +35,9 @@ ZEROCONF = {
     ],
     "_wled._tcp.local.": [
         "wled"
+    ],
+    "_pmsctrl._tcp.local.": [
+        "lg_ess"
     ]
 }
 

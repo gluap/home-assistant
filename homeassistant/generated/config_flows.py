@@ -82,6 +82,7 @@ FLOWS = [
     "vesync",
     "wemo",
     "withings",
+    "wled",
     "wwlln",
     "zha",
     "zone",

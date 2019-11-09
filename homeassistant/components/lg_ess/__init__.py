@@ -24,10 +24,10 @@ async def async_setup(hass, config):
 
 
 async def async_setup_entry(hass, entry):
-    """Set up the lg_ess component."""
+    """Set up the LG ESS integration."""
+
     from pyess.aio_ess import ESS
 
-    """Set up the LG ESS integration."""
     # TODO forward the entry for each platform that you want to set up.
     # hass.async_create_task(
     #     hass.config_entries.async_forward_entry_setup(entry, "media_player")

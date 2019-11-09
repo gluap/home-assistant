@@ -20,6 +20,9 @@ ZEROCONF = {
     ],
     "_hap._tcp.local.": [
         "homekit_controller"
+    ],
+    "_pmsctrl._tcp.local.": [
+        "lg_ess"
     ]
 }
 

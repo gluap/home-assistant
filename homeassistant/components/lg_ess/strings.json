@@ -1,0 +1,24 @@
+{
+  "config": {
+    "title": "LG ESS",
+    "step": {
+      "user": {
+        "title": "LG ESS Power Converter / Energy Storage",
+        "description":"Connect to an LG ESS energy storage / power converter system. \n\n **password has to be fetched via the device wifi**.\n\n on device wifi run\n```\npip install pyess\nesscli --action get_password\n```",
+        "data": {
+          "password": "Password",
+          "ip": "IP address (should be autodetected)",
+          "name": "Name of the device (should be autodetected, printed on the label on the side of the device)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect, make sure that you are on the same network as the ESS and try again.",
+      "invalid_auth": "ESS reports that there is something wrong with the password.",
+      "unknown": "Unexpected error"
+    },
+    "abort": {
+      "already_configured": "Device is already configured"
+    }
+  }
+}

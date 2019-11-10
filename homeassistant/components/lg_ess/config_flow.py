@@ -63,7 +63,9 @@ class DomainConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             {
                 vol.Optional("name", default=self.name): str,
                 vol.Required("password"): str,
-                vol.Required("ip", default=self.ip): str,
+                vol.Required("ip", default=self.ip): str
+                #                vol.Optional('sensors', default=['COMMON.PV.today_generatin_sum', 'COMMON.GRID.active_power',
+                #                                                 'COMMON.LOAD.load_power']): list,
             }
         )
 

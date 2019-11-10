@@ -141,11 +141,7 @@ class ESSSensor(Entity):
         try:
             return float(iteratively_query_dict(self.sensor_path, self._data))
         except ValueError:
-            _LOGGER.warning(
-                "could not convert {} to float for sensor {}".format(
-                    iteratively_query_dict(self.sensor_path, self._data), self.id
-                )
-            )
+            # just return the string if it's not a number
             return iteratively_query_dict(self.sensor_path, self._data)
 
     @property

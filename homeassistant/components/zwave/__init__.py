@@ -79,12 +79,14 @@ CONF_REFRESH_DELAY = "delay"
 CONF_DEVICE_CONFIG = "device_config"
 CONF_DEVICE_CONFIG_GLOB = "device_config_glob"
 CONF_DEVICE_CONFIG_DOMAIN = "device_config_domain"
+CONF_TILT_OPEN_POSITION = "tilt_open_position"
 
 DEFAULT_CONF_IGNORED = False
 DEFAULT_CONF_INVERT_OPENCLOSE_BUTTONS = False
 DEFAULT_CONF_INVERT_PERCENT = False
 DEFAULT_CONF_REFRESH_VALUE = False
 DEFAULT_CONF_REFRESH_DELAY = 5
+DEFAULT_CONF_TILT_OPEN_POSITION = 50
 
 SUPPORTED_PLATFORMS = [
     "binary_sensor",
@@ -214,6 +216,9 @@ DEVICE_CONFIG_SCHEMA_ENTRY = vol.Schema(
         vol.Optional(
             CONF_REFRESH_DELAY, default=DEFAULT_CONF_REFRESH_DELAY
         ): cv.positive_int,
+        vol.Optional(
+            CONF_TILT_OPEN_POSITION, default=DEFAULT_CONF_TILT_OPEN_POSITION
+        ): cv.positive_int,
     }
 )
 
@@ -270,7 +275,7 @@ def nice_print_node(node):
         value_id: _obj_to_dict(value) for value_id, value in node.values.items()
     }
 
-    _LOGGER.info("FOUND NODE %s \n" "%s", node.product_name, node_dict)
+    _LOGGER.info("FOUND NODE %s \n%s", node.product_name, node_dict)
 
 
 def get_config_value(node, value_index, tries=5):
@@ -435,7 +440,6 @@ async def async_setup_entry(hass, config_entry):
         platform=None,
         scan_interval=DEFAULT_SCAN_INTERVAL,
         entity_namespace=None,
-        async_entities_added_callback=lambda: None,
     )
     platform.config_entry = config_entry
 
@@ -471,7 +475,7 @@ async def async_setup_entry(hass, config_entry):
         @callback
         def _on_timeout(sec):
             _LOGGER.warning(
-                "Z-Wave node %d not ready after %d seconds, " "continuing anyway",
+                "Z-Wave node %d not ready after %d seconds, continuing anyway",
                 entity.node_id,
                 sec,
             )
@@ -521,7 +525,7 @@ async def async_setup_entry(hass, config_entry):
     def network_complete():
         """Handle the querying of all nodes on network."""
         _LOGGER.info(
-            "Z-Wave network is complete. All nodes on the network " "have been queried"
+            "Z-Wave network is complete. All nodes on the network have been queried"
         )
         hass.bus.fire(const.EVENT_NETWORK_COMPLETE)
 
@@ -679,7 +683,7 @@ async def async_setup_entry(hass, config_entry):
             if value.type == const.TYPE_BOOL:
                 value.data = int(selection == "True")
                 _LOGGER.info(
-                    "Setting config parameter %s on Node %s " "with bool selection %s",
+                    "Setting config parameter %s on Node %s with bool selection %s",
                     param,
                     node_id,
                     str(selection),
@@ -688,7 +692,7 @@ async def async_setup_entry(hass, config_entry):
             if value.type == const.TYPE_LIST:
                 value.data = str(selection)
                 _LOGGER.info(
-                    "Setting config parameter %s on Node %s " "with list selection %s",
+                    "Setting config parameter %s on Node %s with list selection %s",
                     param,
                     node_id,
                     str(selection),
@@ -707,7 +711,7 @@ async def async_setup_entry(hass, config_entry):
                 return
             value.data = int(selection)
             _LOGGER.info(
-                "Setting config parameter %s on Node %s " "with selection %s",
+                "Setting config parameter %s on Node %s with selection %s",
                 param,
                 node_id,
                 selection,
@@ -715,7 +719,7 @@ async def async_setup_entry(hass, config_entry):
             return
         node.set_config_param(param, selection, size)
         _LOGGER.info(
-            "Setting unknown config parameter %s on Node %s " "with selection %s",
+            "Setting unknown config parameter %s on Node %s with selection %s",
             param,
             node_id,
             selection,
@@ -826,7 +830,7 @@ async def async_setup_entry(hass, config_entry):
             )
             return
         _LOGGER.info(
-            "Node %s on instance %s does not have resettable " "meters.",
+            "Node %s on instance %s does not have resettable meters.",
             node_id,
             instance,
         )

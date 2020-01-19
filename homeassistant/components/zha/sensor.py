@@ -12,14 +12,21 @@ from homeassistant.components.sensor import (
     DEVICE_CLASS_TEMPERATURE,
     DOMAIN,
 )
-from homeassistant.const import ATTR_UNIT_OF_MEASUREMENT, POWER_WATT, TEMP_CELSIUS
+from homeassistant.const import (
+    ATTR_UNIT_OF_MEASUREMENT,
+    POWER_WATT,
+    STATE_UNKNOWN,
+    TEMP_CELSIUS,
+)
 from homeassistant.core import callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
+from homeassistant.util.temperature import fahrenheit_to_celsius
 
 from .core.const import (
     CHANNEL_ELECTRICAL_MEASUREMENT,
     CHANNEL_HUMIDITY,
     CHANNEL_ILLUMINANCE,
+    CHANNEL_MULTISTATE_INPUT,
     CHANNEL_POWER_CONFIGURATION,
     CHANNEL_PRESSURE,
     CHANNEL_SMARTENERGY_METERING,
@@ -121,7 +128,7 @@ class Sensor(ZhaEntity):
     async def async_added_to_hass(self):
         """Run when about to be added to hass."""
         await super().async_added_to_hass()
-        self._device_state_attributes = await self.async_state_attr_provider()
+        self._device_state_attributes.update(await self.async_state_attr_provider())
 
         await self.async_accept_signal(
             self._channel, SIGNAL_ATTR_UPDATED, self.async_set_state
@@ -145,8 +152,6 @@ class Sensor(ZhaEntity):
         """Return the state of the entity."""
         if self._state is None:
             return None
-        if isinstance(self._state, float):
-            return str(round(self._state, 2))
         return self._state
 
     def async_set_state(self, state):
@@ -160,7 +165,6 @@ class Sensor(ZhaEntity):
     def async_restore_last_state(self, last_state):
         """Restore previous state."""
         self._state = last_state.state
-        self._unit = last_state.attributes.get(ATTR_UNIT_OF_MEASUREMENT)
 
     @callback
     async def async_state_attr_provider(self):
@@ -203,6 +207,12 @@ class Battery(Sensor):
             state_attrs["battery_quantity"] = battery_quantity
         return state_attrs
 
+    def async_update_state_attribute(self, key, value):
+        """Update a single device state attribute."""
+        if key == "battery_voltage":
+            self._device_state_attributes[key] = round(value / 10, 1)
+            self.async_schedule_update_ha_state()
+
 
 @STRICT_MATCH(channel_names=CHANNEL_ELECTRICAL_MEASUREMENT)
 class ElectricalMeasurement(Sensor):
@@ -219,7 +229,22 @@ class ElectricalMeasurement(Sensor):
 
     def formatter(self, value) -> int:
         """Return 'normalized' value."""
-        return round(value * self._channel.multiplier / self._channel.divisor)
+        value = value * self._channel.multiplier / self._channel.divisor
+        if value < 100 and self._channel.divisor > 1:
+            return round(value, self._decimals)
+        return round(value)
+
+
+@STRICT_MATCH(channel_names=CHANNEL_MULTISTATE_INPUT)
+class Text(Sensor):
+    """Sensor that displays string values."""
+
+    _device_class = None
+    _unit = None
+
+    def formatter(self, value) -> str:
+        """Return string value."""
+        return value
 
 
 @STRICT_MATCH(generic_ids=CHANNEL_ST_HUMIDITY_CLUSTER)
@@ -277,3 +302,14 @@ class Temperature(Sensor):
     _device_class = DEVICE_CLASS_TEMPERATURE
     _divisor = 100
     _unit = TEMP_CELSIUS
+
+    @callback
+    def async_restore_last_state(self, last_state):
+        """Restore previous state."""
+        if last_state.state == STATE_UNKNOWN:
+            return
+        if last_state.attributes.get(ATTR_UNIT_OF_MEASUREMENT) != TEMP_CELSIUS:
+            ftemp = float(last_state.state)
+            self._state = round(fahrenheit_to_celsius(ftemp), 1)
+            return
+        self._state = last_state.state
